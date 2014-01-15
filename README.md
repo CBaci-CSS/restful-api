@@ -28,7 +28,7 @@ Key features of this plugin include:
 * A DSL-based configuration that is used to expose resources
 * Use of custom media types to identify representations (and versioning)
 * Declarative marshaling and extraction of versioned representations (JSON and XML)
- * Include, omit, and rename properies
+ * Include, omit, and rename properties
  * Group and reuse marshalers
  * Add affordances (support HATEOAS)
  * Ability to configure custom marshallers and extractors when declarative configuration is not sufficient (e.g., PDF, iCalendar, binary formats)

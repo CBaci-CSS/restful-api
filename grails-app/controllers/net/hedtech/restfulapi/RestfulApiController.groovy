@@ -18,7 +18,7 @@ package net.hedtech.restfulapi
 
 import grails.converters.JSON
 import grails.converters.XML
-import grails.validation.ValidationException
+
 
 import java.security.*
 
@@ -29,6 +29,8 @@ import javax.annotation.PostConstruct
 import net.hedtech.restfulapi.marshallers.StreamWrapper
 
 import net.hedtech.restfulapi.config.*
+
+import net.hedtech.restfulapi.exceptionhandlers.*
 
 import net.hedtech.restfulapi.extractors.*
 import net.hedtech.restfulapi.extractors.configuration.*
@@ -93,6 +95,11 @@ class RestfulApiController {
 
     private ExtractorAdapter extractorAdapter = new DefaultExtractorAdapter()
 
+    private ExceptionHandlerConfiguration handlerConfig = new ExceptionHandlerConfiguration()
+    private ExceptionHandler defaultExceptionHandler = new DefaultExceptionHandler()
+    def localizingClosure = { mapToLocalize -> this.message( mapToLocalize ) }
+    private Localizer localizer = new Localizer(localizingClosure)
+
     // Custom headers (configured within Config.groovy)
     String totalCountHeader
     String pageMaxHeader
@@ -115,6 +122,7 @@ class RestfulApiController {
     //       'init()' is invoked explicitly from RestfulApiGrailsPlugin.
     // @PostConstruct
     void init() {
+        initExceptionHandlers()
 
         totalCountHeader = grailsApplication.config.restfulApi.header.totalCount
         pageMaxHeader    = grailsApplication.config.restfulApi.header.pageMaxSize
@@ -436,11 +444,13 @@ class RestfulApiController {
     protected ResponseHolder createErrorResponse( Throwable e ) {
         ResponseHolder responseHolder = new ResponseHolder()
         try {
-            def handler = exceptionHandlers[ getErrorType( e ) ]
+            //def handler = exceptionHandlers[ getErrorType( e ) ]
+            def handler = handlerConfig.getExceptionHandler(e)
+
             if (!handler) {
-                handler = exceptionHandlers[ 'AnyOtherException' ]
+                handler = defaultExceptionHandler
             }
-            def result = handler(params.pluralizedResourceName, e)
+            def result = handler.handle(params.pluralizedResourceName, e, localizer)
             if (result.headers) {
                 result.headers.each() { header ->
                     if (header.value instanceof Collection) {
@@ -507,7 +517,7 @@ class RestfulApiController {
                     result = (data as JSON) as String
 
                     // add a prefix if configured to protect from a JSON Array
-                    // vulnerability to CSRF attack. 
+                    // vulnerability to CSRF attack.
                     if (data instanceof Collection) {
                         if (representation.jsonArrayPrefix instanceof String) {
                             result = representation.jsonArrayPrefix + result
@@ -699,10 +709,12 @@ class RestfulApiController {
     }
 
 
+
     /**
      * Maps an exception to an error type known to the controller.
      * @param e the exception to map
      **/
+     /*
     protected String getErrorType( e ) {
 
         if (e.metaClass.respondsTo( e, "getHttpStatusCode") &&
@@ -729,7 +741,7 @@ class RestfulApiController {
         } else {
             return 'AnyOtherException'
         }
-    }
+    }*/
 
 
     /**
@@ -976,6 +988,18 @@ class RestfulApiController {
         restConfig.getResource( resource )
     }
 
+    private initExceptionHandlers() {
+        handlerConfig.add(new ApplicationExceptionHandler())
+        handlerConfig.add(new OptimisticLockExceptionHandler())
+        handlerConfig.add(new ValidationExceptionHandler())
+        handlerConfig.add(new UnsupportedResourceExceptionHandler())
+        handlerConfig.add(new UnsupportedRequestRepresentationExceptionHandler())
+        handlerConfig.add(new UnsupportedResponseRepresentationExceptionHandler())
+        handlerConfig.add(new IdMismatchExceptionHandler())
+        handlerConfig.add(new UnsupportedMethodExceptionHandler())
+    }
+
+    /*
     private def exceptionHandlers = [
 
         'ValidationException': { pluralizededResourceName, e->
@@ -1081,6 +1105,6 @@ class RestfulApiController {
                 ]
             ]
         }
-    ]
+    ]*/
 
 }

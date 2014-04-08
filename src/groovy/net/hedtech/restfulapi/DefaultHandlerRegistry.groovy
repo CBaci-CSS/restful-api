@@ -18,22 +18,22 @@ package net.hedtech.restfulapi
 
 import java.util.concurrent.atomic.AtomicInteger
 
-class ExceptionHandlerConfiguration {
+class DefaultHandlerRegistry<T, H extends Handler<T>> implements HandlerRegistry<T,H> {
     public static final int DEFAULT_PRIORITY = 0
 
     private static final AtomicInteger SEQUENCE = new AtomicInteger(0)
 
     private final SortedSet<Entry> handlers = new TreeSet<Entry>();
 
-    public void add(ExceptionHandler handler) {
+    void add(H handler) {
         add(handler, DEFAULT_PRIORITY)
     }
 
-    public void add(ExceptionHandler handler, int priority) {
+    void add(H handler, int priority) {
         handlers.add(new Entry(handler,priority))
     }
 
-    public ExceptionHandler getExceptionHandler(Throwable t) {
+    H getHandler(T t) {
         for (Entry entry : handlers) {
             if (entry.handler.supports(t)) {
                 return entry.handler
@@ -42,21 +42,31 @@ class ExceptionHandlerConfiguration {
         return null
     }
 
+    List<H> getOrderedHandlers() {
+        List<H> list = new ArrayList<H>()
+        for (Entry entry : handlers) {
+            list.add(entry.handler);
+        }
+        list
+    }
 
-    public class Entry implements Comparable<Entry> {
-        protected final ExceptionHandler handler
+
+    class Entry implements Comparable<Entry> {
+        protected final H handler
         private final int priority
         private final int seq
 
-        private Entry(ExceptionHandler handler, int priority) {
+        private Entry(H handler, int priority) {
             this.handler = handler
             this.priority = priority
             seq = SEQUENCE.incrementAndGet();
         }
 
         public int compareTo(Entry entry) {
-            //if two handlers have the same priority, the one registered first is used
+            //if two handlers have the same priority, the one registered last is used
             //to ensure deterministic behavior
+            //this ordering is inverted; higher priority/higher sequences handlers are considered
+            //to be less, so that they are ordered first.
             return priority == entry.priority ? entry.seq - seq : entry.priority - priority;
         }
     }

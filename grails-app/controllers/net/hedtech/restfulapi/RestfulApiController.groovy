@@ -95,8 +95,7 @@ class RestfulApiController {
 
     private ExtractorAdapter extractorAdapter = new DefaultExtractorAdapter()
 
-    private ExceptionHandlerConfiguration handlerConfig = new ExceptionHandlerConfiguration()
-    private ExceptionHandler defaultExceptionHandler = new DefaultExceptionHandler()
+    private HandlerRegistry<Throwable,ExceptionHandler> handlerConfig = new DefaultHandlerRegistry<Throwable,ExceptionHandler>()
     def localizingClosure = { mapToLocalize -> this.message( mapToLocalize ) }
     private Localizer localizer = new Localizer(localizingClosure)
 
@@ -444,12 +443,7 @@ class RestfulApiController {
     protected ResponseHolder createErrorResponse( Throwable e ) {
         ResponseHolder responseHolder = new ResponseHolder()
         try {
-            //def handler = exceptionHandlers[ getErrorType( e ) ]
-            def handler = handlerConfig.getExceptionHandler(e)
-
-            if (!handler) {
-                handler = defaultExceptionHandler
-            }
+            def handler = handlerConfig.getHandler(e)
             def result = handler.handle(params.pluralizedResourceName, e, localizer)
             if (result.headers) {
                 result.headers.each() { header ->
@@ -709,41 +703,6 @@ class RestfulApiController {
     }
 
 
-
-    /**
-     * Maps an exception to an error type known to the controller.
-     * @param e the exception to map
-     **/
-     /*
-    protected String getErrorType( e ) {
-
-        if (e.metaClass.respondsTo( e, "getHttpStatusCode") &&
-            e.hasProperty( "returnMap" ) &&
-            e.returnMap && (e.returnMap instanceof Closure)) {
-            //treat as an 'ApplicationException'.  That is, assume the exception is taking
-            //responsibility for specifying the correct status code and
-            //response message elements
-            return 'ApplicationException'
-        } else if (e instanceof OptimisticLockingFailureException) {
-            return 'OptimisticLockException'
-        } else if (e instanceof ValidationException) {
-            return 'ValidationException'
-        } else if (e instanceof UnsupportedResourceException) {
-            return 'UnsupportedResourceException'
-        } else if (e instanceof UnsupportedRequestRepresentationException) {
-            return 'UnsupportedRequestRepresentationException'
-        } else if (e instanceof UnsupportedResponseRepresentationException) {
-            return 'UnsupportedResponseRepresentationException'
-        } else if (e instanceof IdMismatchException) {
-            return 'IdMismatchException'
-        } else if (e instanceof UnsupportedMethodException) {
-            return 'UnsupportedMethodException'
-        } else {
-            return 'AnyOtherException'
-        }
-    }*/
-
-
     /**
      * Returns the name of the service to which this controller will delegate.
      * This implementation assumes the resource is a Grails 'domain'
@@ -989,122 +948,14 @@ class RestfulApiController {
     }
 
     private initExceptionHandlers() {
-        handlerConfig.add(new ApplicationExceptionHandler())
-        handlerConfig.add(new OptimisticLockExceptionHandler())
-        handlerConfig.add(new ValidationExceptionHandler())
-        handlerConfig.add(new UnsupportedResourceExceptionHandler())
-        handlerConfig.add(new UnsupportedRequestRepresentationExceptionHandler())
-        handlerConfig.add(new UnsupportedResponseRepresentationExceptionHandler())
-        handlerConfig.add(new IdMismatchExceptionHandler())
-        handlerConfig.add(new UnsupportedMethodExceptionHandler())
+        handlerConfig.add(new ApplicationExceptionHandler(), -1)
+        handlerConfig.add(new OptimisticLockExceptionHandler(), -2)
+        handlerConfig.add(new ValidationExceptionHandler(), -3)
+        handlerConfig.add(new UnsupportedResourceExceptionHandler(), -4 )
+        handlerConfig.add(new UnsupportedRequestRepresentationExceptionHandler(), -5)
+        handlerConfig.add(new UnsupportedResponseRepresentationExceptionHandler(), -6)
+        handlerConfig.add(new IdMismatchExceptionHandler(), -7)
+        handlerConfig.add(new UnsupportedMethodExceptionHandler(), -8)
+        handlerConfig.add(new DefaultExceptionHandler(), Integer.MIN_VALUE)
     }
-
-    /*
-    private def exceptionHandlers = [
-
-        'ValidationException': { pluralizededResourceName, e->
-            [
-                httpStatusCode: 400,
-                headers: ['X-Status-Reason':'Validation failed'],
-                message: message( code: "default.rest.validation.errors.message",
-                                          args: [ Inflector.singularize( pluralizededResourceName ) ] ) as String,
-                returnMap: [
-                    errors: [
-                        [
-                            type: "validation",
-                            errorMessage: e.message
-                        ]
-                    ]
-                ]
-            ]
-        },
-        'OptimisticLockException': { pluralizededResourceName, e ->
-            [
-                httpStatusCode: 409,
-                message: message( code: "default.optimistic.locking.failure",
-                                          args: [ Inflector.singularize( pluralizededResourceName ) ] ) as String,
-            ]
-        },
-        'UnsupportedResourceException': { pluralizededResourceName, e ->
-            [
-                httpStatusCode: 404,
-                message: message( code: "default.rest.unknownresource.message",
-                                          args: [ e.getPluralizedResourceName() ] ) as String,
-            ]
-        },
-        'UnsupportedResponseRepresentationException': { pluralizededResourceName, e ->
-            [
-                httpStatusCode: 406,
-                message: message( code: "default.rest.unknownrepresentation.message",
-                                          args: [ e.getPluralizedResourceName(), e.getContentType() ] ) as String,
-            ]
-        },
-        'UnsupportedRequestRepresentationException': { pluralizededResourceName, e ->
-            [
-                httpStatusCode: 415,
-                message: message( code: "default.rest.unknownrepresentation.message",
-                                          args: [ e.getPluralizedResourceName(), e.getContentType() ] ) as String,
-            ]
-        },
-        'IdMismatchException': { pluralizededResourceName, e ->
-            [
-                httpStatusCode: 400,
-                headers: ['X-Status-Reason':'Id mismatch'],
-                message: message( code: "default.rest.idmismatch.message",
-                                  args: [ e.getPluralizedResourceName() ] ) as String
-            ]
-        },
-        'UnsupportedMethodException': { pluralizedResourceName, e ->
-            def allowedHTTPMethods = []
-            e.getSupportedMethods().each {
-                allowedHTTPMethods.add( Methods.getHttpMethod( it ) )
-            }
-            def r = [
-                httpStatusCode: 405,
-                headers: ['Allow':allowedHTTPMethods],
-                message: message( code: 'default.rest.method.not.allowed.message' ) as String
-            ]
-        },
-        'ApplicationException': { pluralizededResourceName, e ->
-            // wrap the 'message' invocation within a closure, so it can be
-            // passed into an ApplicationException to localize error messages
-            def localizer = { mapToLocalize ->
-                this.message( mapToLocalize )
-            }
-
-            def map = [:]
-            def appMap = e.returnMap( localizer )
-            map.httpStatusCode = e.getHttpStatusCode()
-            if (appMap.headers) {
-                map.headers = appMap.headers
-            }
-            if (appMap.message) {
-                map.message = appMap.message
-            }
-
-            def returnMap = [:]
-            if (appMap.errors) {
-                returnMap.errors = appMap.errors
-            }
-            map.returnMap = returnMap
-
-            return map
-        },
-        // Catch-all.  Unknown exception type.
-        'AnyOtherException': { pluralizededResourceName, e ->
-            [
-                httpStatusCode: 500,
-                message: message( code: "default.rest.general.errors.message",
-                                  args: [ pluralizededResourceName ] ) as String,
-                returnMap: [
-                    errors: [ [
-                        type: "general",
-                        errorMessage: e.message
-                        ]
-                    ]
-                ]
-            ]
-        }
-    ]*/
-
 }

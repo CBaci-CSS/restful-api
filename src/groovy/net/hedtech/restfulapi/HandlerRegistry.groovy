@@ -16,9 +16,14 @@
 
 package net.hedtech.restfulapi
 
-interface ExceptionHandler extends Handler<Throwable> {
+import java.util.concurrent.atomic.AtomicInteger
 
-    boolean supports(Throwable t)
+interface HandlerRegistry<T,H extends Handler<T>> {
+    void add(H handler)
 
-    Map handle(String pluralizedResourceName, Throwable t, Localizer localizer)
+    void add(H handler, int priority)
+
+    H getHandler(T object)
+
+    List<H> getOrderedHandlers()
 }

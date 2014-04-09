@@ -18,6 +18,20 @@ package net.hedtech.restfulapi
 
 import java.util.concurrent.atomic.AtomicInteger
 
+/*
+Attribution:
+Although made generic, this implementation is based on the grails converter configuration
+by Siegfried Puchbauer.
+*/
+/**
+ * Mutable implementation of a registry of handlers, that allows them to be
+ * arranged in priority order.
+ * When asked for a handler for an instance of type T, will iterate over handlers in
+ * priority order, return the first one that supports the instance.
+ * Handlers with a higher priority are checked first.
+ * If two handlers are registered with the same priority, the handler registered second
+ * takes priority.
+ **/
 class DefaultHandlerRegistry<T, H extends Handler<T>> implements HandlerRegistry<T,H> {
     public static final int DEFAULT_PRIORITY = 0
 
@@ -64,9 +78,9 @@ class DefaultHandlerRegistry<T, H extends Handler<T>> implements HandlerRegistry
 
         public int compareTo(Entry entry) {
             //if two handlers have the same priority, the one registered last is used
-            //to ensure deterministic behavior
+            //the assumption is the last handler registered should override previous ones
             //this ordering is inverted; higher priority/higher sequences handlers are considered
-            //to be less, so that they are ordered first.
+            //to be less, so that they are ordered first in the set.
             return priority == entry.priority ? entry.seq - seq : entry.priority - priority;
         }
     }

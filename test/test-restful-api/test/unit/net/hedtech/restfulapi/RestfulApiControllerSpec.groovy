@@ -612,6 +612,44 @@ class RestfulApiControllerSpec extends Specification {
         'dummy message' == response.getHeaderValue( 'X-hedtech-message' )
     }
 
+    def "Test exception handlers override controller handlers"() {
+        setup:
+        config.restfulApiConfig = {
+            resource 'things' config {
+                representation {
+                    mediaTypes = ['application/json']
+                    extractor = new DefaultJSONExtractor()
+                }
+            }
+            exceptionHandlers {
+                handler {
+                    instance = new DefaultExceptionHandler()
+                    priority = Integer.MIN_VALUE
+                }
+            }
+        }
+        controller.init()
+
+        //mock the appropriate service method, expect exactly 1 invocation
+        def mock = Mock(ThingService)
+        controller.metaClass.getService = {-> mock}
+
+        request.addHeader( 'Accept', 'application/json' )
+        //incoming format always json, so no errors
+        request.addHeader( 'Content-Type', 'application/json' )
+        params.pluralizedResourceName = 'things'
+
+        when:
+        controller.list()
+
+        then:
+        1*mock.list(_) >> { throw new Exception() }
+        //our handler should take priority, as it registers last
+        403 == response.status
+          0 == response.getContentLength()
+        'dummy message' == response.getHeaderValue( 'X-hedtech-message' )
+    }
+
     def "Test that delete with empty body ignores Content-Type"() {
         setup:
         //use default extractor for any methods with a request body
@@ -2018,6 +2056,19 @@ class RestfulApiControllerSpec extends Specification {
     static class CheckedApplicationExceptionHandler implements ExceptionHandler {
         boolean supports(Throwable t) {
             t instanceof CheckedApplicationException
+        }
+
+        ErrorResponse handle(Throwable t, ExceptionHandlerContext context) {
+            new ErrorResponse(
+                httpStatusCode: 403,
+                message: 'dummy message'
+            )
+        }
+    }
+
+    static class DefaultExceptionHandler implements ExceptionHandler {
+        boolean supports(Throwable t) {
+            true
         }
 
         ErrorResponse handle(Throwable t, ExceptionHandlerContext context) {

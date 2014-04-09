@@ -16,6 +16,16 @@
 
 package net.hedtech.restfulapi
 
+/*
+Attribution:
+The handler concept is based on the grails converters and related configuration work
+by Siegfried Puchbauer.
+*/
+/**
+ * A handler for a given type, T.
+ * Handlers must be able to answer true or false to the question of whether
+ * they support an instance of the type T.
+ **/
 interface Handler<T> {
     boolean supports(T object)
 }

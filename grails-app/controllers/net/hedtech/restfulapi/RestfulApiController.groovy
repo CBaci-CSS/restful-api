@@ -176,6 +176,7 @@ class RestfulApiController {
             restConfig.exceptionHandlers.each { config ->
                 handlerConfig.add(config.instance, config.priority)
             }
+
         }
 
         //see if we are running with hibernate and need to support PagedList
@@ -956,14 +957,15 @@ class RestfulApiController {
     }
 
     private initExceptionHandlers() {
-        handlerConfig.add(new ApplicationExceptionHandler(), -1)
-        handlerConfig.add(new OptimisticLockExceptionHandler(), -2)
-        handlerConfig.add(new ValidationExceptionHandler(), -3)
-        handlerConfig.add(new UnsupportedResourceExceptionHandler(), -4 )
-        handlerConfig.add(new UnsupportedRequestRepresentationExceptionHandler(), -5)
-        handlerConfig.add(new UnsupportedResponseRepresentationExceptionHandler(), -6)
-        handlerConfig.add(new IdMismatchExceptionHandler(), -7)
         handlerConfig.add(new UnsupportedMethodExceptionHandler(), -8)
+        handlerConfig.add(new IdMismatchExceptionHandler(), -7)
+        handlerConfig.add(new UnsupportedResponseRepresentationExceptionHandler(), -6)
+        handlerConfig.add(new UnsupportedRequestRepresentationExceptionHandler(), -5)
+        handlerConfig.add(new UnsupportedResourceExceptionHandler(), -4 )
+        handlerConfig.add(new ValidationExceptionHandler(), -3)
+        handlerConfig.add(new OptimisticLockExceptionHandler(), -2)
+        handlerConfig.add(new ApplicationExceptionHandler(), -1)
+
         handlerConfig.add(new DefaultExceptionHandler(), Integer.MIN_VALUE)
     }
 }

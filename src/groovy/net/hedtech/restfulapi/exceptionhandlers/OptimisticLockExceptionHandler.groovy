@@ -16,11 +16,10 @@
 
 package net.hedtech.restfulapi.exceptionhandlers
 
+import net.hedtech.restfulapi.ErrorResponse
 import net.hedtech.restfulapi.ExceptionHandler
+import net.hedtech.restfulapi.ExceptionHandlerContext
 import net.hedtech.restfulapi.Inflector
-import net.hedtech.restfulapi.Localizer
-
-import javax.servlet.http.HttpServletRequest
 
 class OptimisticLockExceptionHandler implements ExceptionHandler {
 
@@ -28,12 +27,12 @@ class OptimisticLockExceptionHandler implements ExceptionHandler {
         (e instanceof org.springframework.dao.OptimisticLockingFailureException)
     }
 
-    Map handle(String pluralizedResourceName, Throwable e, Localizer localizer) {
-        [
+    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
+        new ErrorResponse(
             httpStatusCode: 409,
-            message: localizer.message(
+            message: context.localizer.message(
                 code: "default.optimistic.locking.failure",
-                args: [ Inflector.singularize( pluralizedResourceName ) ] )
-        ]
+                args: [ Inflector.singularize( context.pluralizedResourceName ) ] )
+        )
     }
 }

@@ -16,11 +16,9 @@
 
 package net.hedtech.restfulapi.exceptionhandlers
 
+import net.hedtech.restfulapi.ErrorResponse
 import net.hedtech.restfulapi.ExceptionHandler
-import net.hedtech.restfulapi.Inflector
-import net.hedtech.restfulapi.Localizer
-
-import javax.servlet.http.HttpServletRequest
+import net.hedtech.restfulapi.ExceptionHandlerContext
 
 class IdMismatchExceptionHandler implements ExceptionHandler {
 
@@ -28,13 +26,13 @@ class IdMismatchExceptionHandler implements ExceptionHandler {
         (e instanceof net.hedtech.restfulapi.IdMismatchException)
     }
 
-    Map handle(String pluralizedResourceName, Throwable e, Localizer localizer) {
-        [
+    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
+        new ErrorResponse(
             httpStatusCode: 400,
             headers: ['X-Status-Reason':'Id mismatch'],
-            message: localizer.message(
+            message: context.localizer.message(
                 code: "default.rest.idmismatch.message",
                 args: [ e.getPluralizedResourceName() ])
-        ]
+        )
     }
 }

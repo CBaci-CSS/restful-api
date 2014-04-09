@@ -16,11 +16,10 @@
 
 package net.hedtech.restfulapi.exceptionhandlers
 
+import net.hedtech.restfulapi.ErrorResponse
 import net.hedtech.restfulapi.ExceptionHandler
+import net.hedtech.restfulapi.ExceptionHandlerContext
 import net.hedtech.restfulapi.Inflector
-import net.hedtech.restfulapi.Localizer
-
-import javax.servlet.http.HttpServletRequest
 
 class ValidationExceptionHandler implements ExceptionHandler {
 
@@ -28,14 +27,14 @@ class ValidationExceptionHandler implements ExceptionHandler {
         (t instanceof grails.validation.ValidationException)
     }
 
-    Map handle(String pluralizedResourceName, Throwable e, Localizer localizer) {
-        [
+    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
+        new ErrorResponse(
             httpStatusCode: 400,
             headers: ['X-Status-Reason':'Validation failed'],
-            message: localizer.message(
+            message: context.localizer.message(
                 code: "default.rest.validation.errors.message",
-                args: [ Inflector.singularize(pluralizedResourceName)]),
-            returnMap: [
+                args: [ Inflector.singularize(context.pluralizedResourceName)]),
+            content: [
                 errors: [
                     [
                         type: "validation",
@@ -43,6 +42,6 @@ class ValidationExceptionHandler implements ExceptionHandler {
                     ]
                 ]
             ]
-        ]
+        )
     }
 }

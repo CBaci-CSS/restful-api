@@ -16,11 +16,9 @@
 
 package net.hedtech.restfulapi.exceptionhandlers
 
+import net.hedtech.restfulapi.ErrorResponse
 import net.hedtech.restfulapi.ExceptionHandler
-import net.hedtech.restfulapi.Inflector
-import net.hedtech.restfulapi.Localizer
-
-import javax.servlet.http.HttpServletRequest
+import net.hedtech.restfulapi.ExceptionHandlerContext
 
 /**
  * Default handler that treats any exception as a 500 response.
@@ -31,13 +29,13 @@ class DefaultExceptionHandler implements ExceptionHandler {
         true
     }
 
-    Map handle(String pluralizedResourceName, Throwable e, Localizer localizer) {
-        [
+    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
+        new ErrorResponse(
             httpStatusCode: 500,
-            message: localizer.message(
+            message: context.localizer.message(
                 code: "default.rest.general.errors.message",
-                args: [ pluralizedResourceName ]),
-            returnMap: [
+                args: [ context.pluralizedResourceName ]),
+            content: [
                 errors: [
                     [
                         type: "general",
@@ -45,6 +43,6 @@ class DefaultExceptionHandler implements ExceptionHandler {
                     ]
                 ]
             ]
-        ]
+        )
     }
 }

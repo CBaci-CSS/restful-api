@@ -2020,11 +2020,11 @@ class RestfulApiControllerSpec extends Specification {
             t instanceof CheckedApplicationException
         }
 
-        Map handle(String pluralizedResourceName, Throwable t, Localizer localizer) {
-            [
+        ErrorResponse handle(Throwable t, ExceptionHandlerContext context) {
+            new ErrorResponse(
                 httpStatusCode: 403,
                 message: 'dummy message'
-            ]
+            )
         }
     }
 }

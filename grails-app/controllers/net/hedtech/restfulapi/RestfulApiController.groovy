@@ -402,7 +402,7 @@ class RestfulApiController {
      * @param e the exception to render an error response for
      **/
     protected void renderErrorResponse( Throwable e ) {
-        ResponseHolder responseHolder = createErrorResponse( e )
+        ResponseHolder responseHolder = createErrorResponse(e)
         //The versioning applies to resource representations, not to
         //errors.  In fact, it can't, as the error may be that an unrecognized format
         //was requested.  So if we are returning an error response, we switch the format
@@ -448,7 +448,11 @@ class RestfulApiController {
         ResponseHolder responseHolder = new ResponseHolder()
         try {
             def handler = handlerConfig.getHandler(e)
-            def result = handler.handle(params.pluralizedResourceName, e, localizer)
+            ExceptionHandlerContext context = new ExceptionHandlerContext(
+                        pluralizedResourceName:params.pluralizedResourceName,
+                        localizer:localizer)
+
+            ErrorResponse result = handler.handle(e, context)
             if (result.headers) {
                 result.headers.each() { header ->
                     if (header.value instanceof Collection) {
@@ -460,9 +464,9 @@ class RestfulApiController {
                     }
                 }
             }
-            responseHolder.data = result.returnMap
+            responseHolder.data = result.content
             responseHolder.message = result.message
-            this.response.setStatus( result.httpStatusCode )
+            this.response.setStatus(result.httpStatusCode)
         }
         catch (t) {
             //We generated an exception trying to generate an error response.

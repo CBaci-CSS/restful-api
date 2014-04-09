@@ -20,5 +20,5 @@ interface ExceptionHandler extends Handler<Throwable> {
 
     boolean supports(Throwable t)
 
-    Map handle(String pluralizedResourceName, Throwable t, Localizer localizer)
+    ErrorResponse handle(Throwable t, ExceptionHandlerContext context)
 }

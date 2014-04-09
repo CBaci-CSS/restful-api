@@ -16,11 +16,9 @@
 
 package net.hedtech.restfulapi.exceptionhandlers
 
+import net.hedtech.restfulapi.ErrorResponse
 import net.hedtech.restfulapi.ExceptionHandler
-import net.hedtech.restfulapi.Inflector
-import net.hedtech.restfulapi.Localizer
-
-import javax.servlet.http.HttpServletRequest
+import net.hedtech.restfulapi.ExceptionHandlerContext
 
 class UnsupportedResponseRepresentationExceptionHandler implements ExceptionHandler {
 
@@ -28,12 +26,12 @@ class UnsupportedResponseRepresentationExceptionHandler implements ExceptionHand
         (t instanceof net.hedtech.restfulapi.UnsupportedResponseRepresentationException)
     }
 
-    Map handle(String pluralizedResourceName, Throwable e, Localizer localizer) {
-        [
+    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
+        new ErrorResponse(
             httpStatusCode: 406,
-            message: localizer.message(
+            message: context.localizer.message(
                 code: "default.rest.unknownrepresentation.message",
                 args: [ e.getPluralizedResourceName(), e.getContentType() ])
-        ]
+        )
     }
 }

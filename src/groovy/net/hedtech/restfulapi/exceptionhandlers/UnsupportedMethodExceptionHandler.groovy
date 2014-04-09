@@ -16,12 +16,10 @@
 
 package net.hedtech.restfulapi.exceptionhandlers
 
+import net.hedtech.restfulapi.ErrorResponse
 import net.hedtech.restfulapi.ExceptionHandler
-import net.hedtech.restfulapi.Inflector
-import net.hedtech.restfulapi.Localizer
+import net.hedtech.restfulapi.ExceptionHandlerContext
 import net.hedtech.restfulapi.Methods
-
-import javax.servlet.http.HttpServletRequest
 
 class UnsupportedMethodExceptionHandler implements ExceptionHandler {
 
@@ -29,15 +27,15 @@ class UnsupportedMethodExceptionHandler implements ExceptionHandler {
         (t instanceof net.hedtech.restfulapi.UnsupportedMethodException)
     }
 
-    Map handle(String pluralizedResourceName, Throwable e, Localizer localizer) {
+    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
         def allowedHTTPMethods = []
         e.getSupportedMethods().each {
             allowedHTTPMethods.add( Methods.getHttpMethod( it ) )
         }
-        def r = [
+        new ErrorResponse(
             httpStatusCode: 405,
             headers: ['Allow':allowedHTTPMethods],
-            message: localizer.message( code: 'default.rest.method.not.allowed.message' )
-        ]
+            message: context.localizer.message( code: 'default.rest.method.not.allowed.message' )
+        )
     }
 }

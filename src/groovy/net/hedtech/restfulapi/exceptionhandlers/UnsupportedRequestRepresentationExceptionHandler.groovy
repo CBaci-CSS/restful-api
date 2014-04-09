@@ -16,11 +16,10 @@
 
 package net.hedtech.restfulapi.exceptionhandlers
 
+import net.hedtech.restfulapi.ErrorResponse
 import net.hedtech.restfulapi.ExceptionHandler
+import net.hedtech.restfulapi.ExceptionHandlerContext
 import net.hedtech.restfulapi.Inflector
-import net.hedtech.restfulapi.Localizer
-
-import javax.servlet.http.HttpServletRequest
 
 class UnsupportedRequestRepresentationExceptionHandler implements ExceptionHandler {
 
@@ -28,12 +27,12 @@ class UnsupportedRequestRepresentationExceptionHandler implements ExceptionHandl
         (t instanceof net.hedtech.restfulapi.UnsupportedRequestRepresentationException)
     }
 
-    Map handle(String pluralizedResourceName, Throwable e, Localizer localizer) {
-      [
-        httpStatusCode: 415,
-        message: localizer.message(
-            code: "default.rest.unknownrepresentation.message",
-            args: [ e.getPluralizedResourceName(), e.getContentType() ])
-        ]
+    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
+        new ErrorResponse(
+            httpStatusCode: 415,
+            message: context.localizer.message(
+                code: "default.rest.unknownrepresentation.message",
+                args: [ e.getPluralizedResourceName(), e.getContentType() ])
+        )
     }
 }

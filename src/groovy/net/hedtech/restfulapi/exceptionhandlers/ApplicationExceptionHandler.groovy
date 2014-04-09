@@ -16,9 +16,9 @@
 
 package net.hedtech.restfulapi.exceptionhandlers
 
+import net.hedtech.restfulapi.ErrorResponse
 import net.hedtech.restfulapi.ExceptionHandler
-import net.hedtech.restfulapi.Inflector
-import net.hedtech.restfulapi.Localizer
+import net.hedtech.restfulapi.ExceptionHandlerContext
 
 class ApplicationExceptionHandler implements ExceptionHandler {
 
@@ -32,29 +32,30 @@ class ApplicationExceptionHandler implements ExceptionHandler {
         //response message elements
     }
 
-    Map handle(String pluralizedResourceName, Throwable e, Localizer localizer) {
+    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
         // wrap the 'message' invocation within a closure, so it can be
         // passed into an ApplicationException to localize error messages
-        def l = { mapToLocalize ->
-            localizer.message(mapToLocalize)
+        def localizer = { mapToLocalize ->
+            context.localizer.message(mapToLocalize)
         }
 
-        def map = [:]
-        def appMap = e.returnMap(l)
-        map.httpStatusCode = e.getHttpStatusCode()
+        def response = new ErrorResponse()
+        response.httpStatusCode = e.getHttpStatusCode()
+
+        def appMap = e.returnMap(localizer)
         if (appMap.headers) {
-            map.headers = appMap.headers
+            response.headers = appMap.headers
         }
         if (appMap.message) {
-            map.message = appMap.message
+            response.message = appMap.message
         }
 
         def returnMap = [:]
         if (appMap.errors) {
             returnMap.errors = appMap.errors
         }
-        map.returnMap = returnMap
+        response.content = returnMap
 
-        return map
+        return response
     }
 }

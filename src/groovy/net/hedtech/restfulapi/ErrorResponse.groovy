@@ -14,24 +14,15 @@
  * limitations under the License.
  *****************************************************************************/
 
-package net.hedtech.restfulapi.exceptionhandlers
+package net.hedtech.restfulapi
 
-import net.hedtech.restfulapi.ErrorResponse
-import net.hedtech.restfulapi.ExceptionHandler
-import net.hedtech.restfulapi.ExceptionHandlerContext
-
-class UnsupportedResourceExceptionHandler implements ExceptionHandler {
-
-    boolean supports(Throwable t) {
-        (t instanceof net.hedtech.restfulapi.UnsupportedResourceException)
-    }
-
-    ErrorResponse handle(Throwable e, ExceptionHandlerContext context) {
-        new ErrorResponse(
-            httpStatusCode: 404,
-            message: context.localizer.message(
-                code: "default.rest.unknownresource.message",
-                args: [ e.getPluralizedResourceName() ] )
-        )
-    }
+class ErrorResponse {
+    //Required.  The code to set in the response.
+    int httpStatusCode
+    //Optional.  The message to put in the message header
+    String message
+    //Optional.  Additional headers for the response
+    def headers = [:]
+    //Optional.  Will be marshalled as the body of the error response.
+    def content
 }

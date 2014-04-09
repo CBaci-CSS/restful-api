@@ -574,6 +574,44 @@ class RestfulApiControllerSpec extends Specification {
         'my message' == response.getHeaderValue( 'X-hedtech-message' )
     }
 
+    def "Test adding exception handler"() {
+        setup:
+        config.restfulApiConfig = {
+            resource 'things' config {
+                representation {
+                    mediaTypes = ['application/json']
+                    extractor = new DefaultJSONExtractor()
+                }
+            }
+            exceptionHandlers {
+                handler {
+                    instance = new CheckedApplicationExceptionHandler()
+                    priority = 1
+                }
+            }
+        }
+        controller.init()
+
+        //mock the appropriate service method, expect exactly 1 invocation
+        def mock = Mock(ThingService)
+        controller.metaClass.getService = {-> mock}
+
+        request.addHeader( 'Accept', 'application/json' )
+        //incoming format always json, so no errors
+        request.addHeader( 'Content-Type', 'application/json' )
+        params.pluralizedResourceName = 'things'
+
+        when:
+        controller.list()
+
+        then:
+        1*mock.list(_) >> { throw new CheckedApplicationException( 400, 'my message' ) }
+        //our handler should take priority
+        403 == response.status
+          0 == response.getContentLength()
+        'dummy message' == response.getHeaderValue( 'X-hedtech-message' )
+    }
+
     def "Test that delete with empty body ignores Content-Type"() {
         setup:
         //use default extractor for any methods with a request body
@@ -1975,7 +2013,18 @@ class RestfulApiControllerSpec extends Specification {
         void delete(def service, def id, Map content, Map params) throws Throwable {
             service.delete(id,content,params)
         }
-
     }
 
+    static class CheckedApplicationExceptionHandler implements ExceptionHandler {
+        boolean supports(Throwable t) {
+            t instanceof CheckedApplicationException
+        }
+
+        Map handle(String pluralizedResourceName, Throwable t, Localizer localizer) {
+            [
+                httpStatusCode: 403,
+                message: 'dummy message'
+            ]
+        }
+    }
 }

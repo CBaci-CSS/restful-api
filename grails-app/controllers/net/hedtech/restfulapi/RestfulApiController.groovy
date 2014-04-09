@@ -172,6 +172,10 @@ class RestfulApiController {
                     }
                 }
             }
+
+            restConfig.exceptionHandlers.each { config ->
+                handlerConfig.add(config.instance, config.priority)
+            }
         }
 
         //see if we are running with hibernate and need to support PagedList
